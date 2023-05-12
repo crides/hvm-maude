@@ -1,0 +1,464 @@
+load machine-int.maude
+
+fmod unique-map{X :: TRIV, Y :: TRIV} is
+  protecting BOOL .
+  sorts UniqueEntry{X,Y} UniqueMap{X,Y} .
+  subsort UniqueEntry{X,Y} < UniqueMap{X,Y} .
+
+  op _|->_ : X$Elt Y$Elt -> UniqueEntry{X,Y} [ctor] .
+  op empty : -> UniqueMap{X,Y} [ctor] .
+  op _,_ : UniqueMap{X,Y} UniqueMap{X,Y} -> UniqueMap{X,Y} [ctor assoc comm id: empty prec 121 format (d r os d)] .
+  op undefined : -> [Y$Elt] [ctor] .
+  op undef-map : -> [UniqueMap{X,Y}] [ctor] .
+
+  var D : X$Elt .
+  vars R R' : Y$Elt .
+  var M : UniqueMap{X,Y} .
+
+  op insert : X$Elt Y$Elt UniqueMap{X,Y} -> UniqueMap{X,Y} .
+  eq insert(D, R, (M, D |-> R')) = undef-map .
+  eq insert(D, R, M) = (M, D |-> R) [owise] .
+
+  op _[_] : UniqueMap{X,Y} X$Elt -> [Y$Elt] [prec 23] .
+  eq (M, D |-> R)[D] = R .
+
+  op $hasMapping : UniqueMap{X,Y} X$Elt -> Bool .
+  eq $hasMapping((M, D |-> R), D) = true .
+  eq $hasMapping(M, D) = false [owise] .
+endfm
+
+view UniqueMap{X :: TRIV, Y :: TRIV} from TRIV to unique-map{X, Y} is
+  sort Elt to UniqueMap{X,Y} .
+endv
+
+fmod PAIR{X :: TRIV, Y :: TRIV} is
+  protecting BOOL .
+  sorts Pair{X,Y} .
+
+  op [_, _] : X$Elt Y$Elt -> Pair{X,Y} [ctor] .
+
+  var L : X$Elt .
+  vars R : Y$Elt .
+  op fst : Pair{X,Y} -> X$Elt .
+  eq fst([L, R]) = L .
+  op snd : Pair{X,Y} -> Y$Elt .
+  eq snd([L, R]) = R .
+endfm
+
+view PAIR{X :: TRIV, Y :: TRIV} from TRIV to PAIR{X, Y} is
+  sort Elt to Pair{X,Y} .
+endv
+
+fmod hvm-syntax-types is
+    protecting QID .
+    protecting MACHINE-INT{32-BIT} .
+    sorts HTerm Rule Rules .
+    subsort MachineInt < HTerm .
+    subsort Rule < Rules .
+endfm
+
+view HTerm from TRIV to hvm-syntax-types is
+  sort Elt to HTerm .
+endv
+
+view Rules from TRIV to hvm-syntax-types is
+  sort Elt to Rules .
+endv
+
+fmod hvm-syntax is
+    protecting hvm-syntax-types .
+    protecting LIST{HTerm} * (sort List{HTerm} to HTermList) .
+    vars A B : MachineInt .
+    op @_._ : Qid HTerm -> HTerm [format (r o d d d)] .
+    op let _ = _; _ : Qid HTerm HTerm -> HTerm [format (r o d d d d d)] .
+    op app : HTerm HTermList -> HTerm [format (y o)] .
+    vars T T' : HTerm . vars TL : HTermList .
+    op ctor : Qid HTermList -> HTerm [format (y o)] .
+    op ctor : Qid -> HTerm [format (y o)] .
+    op var : Qid -> HTerm [format (y o)] .
+    op oper+ : HTerm HTerm -> HTerm [format (b o)] .
+    op oper- : HTerm HTerm -> HTerm [format (b o)] .
+    op oper* : HTerm HTerm -> HTerm [format (b o)] .
+    op oper/ : HTerm HTerm -> HTerm [format (b o)] .
+    op oper> : HTerm HTerm -> HTerm [format (b o)] .
+    op _ = _ : HTerm HTerm -> Rule .
+    op mt : -> Rules .
+    op _;_ : Rules Rules -> Rules [assoc comm id: mt] .
+endfm
+
+view HTermList from TRIV to hvm-syntax is
+    sort Elt to HTermList .
+endv
+
+fmod hvm-comp-term is
+    protecting MACHINE-INT{32-BIT} .
+    sorts CompVar CTerm CInt .
+    subsorts CompVar < CTerm .
+    subsort CInt < CTerm .
+endfm
+
+view CompVar from TRIV to hvm-comp-term is
+    sort Elt to CompVar .
+endv
+
+view CTerm from TRIV to hvm-comp-term is
+    sort Elt to CTerm .
+endv
+
+fmod hvm-compile-types is
+    protecting hvm-comp-term .
+    protecting ARRAY{Nat, Nat0} * (sort Array{Nat, Nat0} to VarCountMap) .
+    protecting unique-map{Qid, CompVar} * (sort UniqueMap{Qid, CompVar} to NameMap) .
+    protecting unique-map{CompVar, CTerm} * (sort UniqueMap{CompVar, CTerm} to Store) .
+    protecting LIST{CTerm} * (sort List{CTerm} to CTermList) .
+    sorts CRule CRules Eval .
+    subsort CRule < CRules .
+    subsort CTerm < Eval .
+
+    vars Vs Ds Ss : Nat .
+    vars NM : NameMap .
+    vars VCM : VarCountMap .
+    vars A B : MachineInt .
+
+    --- var, dup, sup, ...
+    op <_, _, _ # _, _ |> _> : Nat Nat Nat CRules Store CTermList -> Eval [format (d d d d d d r no d n nssssr o d d)] .
+
+    sort CompState .
+    op <_, _, _ #_,_> : Nat Nat Nat NameMap VarCountMap -> CompState .
+    op vars : CompState -> Nat .
+    eq vars(< Vs, Ds, Ss # NM, VCM >) = Vs .
+    op dups : CompState -> Nat .
+    eq dups(< Vs, Ds, Ss # NM, VCM >) = Ds .
+    op sups : CompState -> Nat .
+    eq sups(< Vs, Ds, Ss # NM, VCM >) = Ss .
+endfm
+
+view CompState from TRIV to hvm-compile-types is
+    sort Elt to CompState .
+endv
+
+view CTermList from TRIV to hvm-compile-types is
+    sort Elt to CTermList .
+endv
+
+view NameMap from TRIV to hvm-compile-types is
+    sort Elt to NameMap .
+endv
+
+view Store from TRIV to hvm-compile-types is
+    sort Elt to Store .
+endv
+
+view CRules from TRIV to hvm-compile-types is
+    sort Elt to CRules .
+endv
+
+view Eval from TRIV to hvm-compile-types is
+    sort Elt to Eval .
+endv
+
+fmod hvm-compile-ctors is
+    protecting hvm-syntax-types .
+    protecting hvm-compile-types .
+    protecting NAT .
+    vars A B : MachineInt .
+    vars C C' : CTerm . vars CL : CTermList .
+
+    op i : MachineInt -> CInt .
+    op x{_ . _} : Nat Nat -> CompVar [ctor format (g d d d d d o)] .
+    op x{_} : Nat -> CompVar [ctor format (g d d d o)] .
+    op c{_} : Nat -> CompVar [ctor format (g d d d o)] .
+    op n{} : -> CompVar [ctor format (g d d o)] .
+    op @_._ : CompVar CTerm -> CTerm [format (r o d d d)] .
+    op clet _ = _; _ : CompVar CTerm CTerm -> CTerm [format (r o d d d d d)] .
+    op capp : CTerm CTermList -> CTerm [format (y o)] .
+    op capp : CTerm CTerm -> CTerm [format (y o) ctor] .
+    eq capp(C, C' CL) = capp(capp(C, C'), CL) .
+    op cctor : Qid CTermList -> CTerm [format (y o)] .
+    op cctor : Qid -> CTerm [format (y o)] .
+    --- label # name0, name1 = expr | body
+    op dup(_ # _, _ = _ | _) : Nat CompVar CompVar CTerm CTerm -> CTerm [format (r o m o g so sg so b o n++++i d n----i)] .
+    --- label # val0, val1
+    op sup(_ # _, _) : Nat CTerm CTerm -> CTerm [format (r o r o d d s d d)] .
+    op coper+ : CTerm CTerm -> CTerm [format (b o)] .
+    op coper- : CTerm CTerm -> CTerm [format (b o)] .
+    op coper* : CTerm CTerm -> CTerm [format (b o)] .
+    op coper/ : CTerm CTerm -> CTerm [format (b o)] .
+    op coper> : CTerm CTerm -> CTerm [format (b o)] .
+    op _ ~ _ : CTerm CTerm -> CRule .
+    op mt : -> CRules .
+    op _;;_ : CRules CRules -> CRules [assoc comm id: mt format (d r on d)] .
+endfm
+
+fmod hvm-compile is
+    protecting hvm-syntax .
+    protecting hvm-compile-types .
+    protecting hvm-compile-ctors .
+
+    vars F F' F'' T T' T'' V V' V'' : HTerm .
+    vars CF CF' CF'' CT CT' CT'' : CTerm .
+    vars TL TL' TL'' : HTermList .
+    vars CL CL' CL'' : CTermList .
+    vars Rs Rs' Rs'' : Rules .
+    vars CRs CRs' CRs'' : CRules .
+    vars S S' S'' : Store .
+    vars X Y Z : Qid .
+    vars I J : MachineInt .
+    vars M N M' N' M'' N'' M''' M'''' N''' N'''' : Nat .
+    vars Vs Vs' Vs'' Vs''' Ds Ds' Ds'' Ds''' Ss Ss' Ss'' Ss''' : Nat .
+    vars Dlab Dlab' Slab Slab' : Nat .
+
+    protecting PAIR{Nat, CompState} * (sort Pair{Nat, CompState} to FreshPair) .
+    protecting PAIR{CTermList, CompState} * (sort Pair{CTermList, CompState} to CompPair) .
+
+    vars NM NM' NM'' NM''' NM'''' : NameMap .
+    vars VCM VCM' VCM'' VCM''' VCM'''' : VarCountMap .
+    vars CS CS' CS'' CS''' CS'''' : CompState .
+    op new-var : CompState -> FreshPair .
+    eq new-var(< Vs, Ds, Ss # NM, VCM >) = [Vs, (< s(Vs), Ds, Ss # NM, VCM >)] .
+    op new-dup : CompState -> FreshPair .
+    eq new-dup(< Vs, Ds, Ss # NM, VCM >) = [Ds, (< Vs, s(Ds), Ss # NM, VCM >)] .
+    op new-sup : CompState -> FreshPair .
+    eq new-sup(< Vs, Ds, Ss # NM, VCM >) = [Ss, (< Vs, Ds, s(Ss) # NM, VCM >)] .
+
+    vars VL : CTermList .
+    vars CV CV' CV'' CV''' : CompVar .
+    op duplicator-go : CompState Nat Nat CTerm CTermList -> CompPair .
+    eq duplicator-go(CS, N, N, CT, VL) = [CT, CS] .
+    ceq duplicator-go(CS, M, N, CT, (CV CV' VL)) = [dup(Dlab # CV, CV' = c{M} | CT'), CS'']
+        if [Dlab, CS'] := new-dup(CS)
+        /\ [CT', CS''] := duplicator-go(CS', M + 1, N, CT, VL) [owise] .
+
+    op gen-dup-var : Nat Nat -> CTermList .
+    eq gen-dup-var(s(M), M') = gen-dup-var(M, M') x{M' . M} .
+    eq gen-dup-var(0, M') = nil .
+
+    op gen-aux-var : Nat -> CTermList .
+    eq gen-aux-var(s(M)) = gen-aux-var(M) c{M} .
+    eq gen-aux-var(0) = nil .
+
+    --- State Name expr body
+    op duplicator : CompState Nat CTerm CTerm -> CompPair .
+    ceq duplicator(< Vs, Ds, Ss # NM, (VCM ; M |-> s(s(M'))) >, M, CF, CT) = [dup(Dlab # CV, CV' = CF | CT'), CS'']
+        if [Dlab, CS'] := new-dup(< Vs, Ds, Ss # NM, VCM >)
+        /\ (CV CV' VL) := gen-aux-var(M') gen-dup-var(2 + M', M)
+        /\ [CT', CS''] := duplicator-go(CS', 0, M', CT, VL) .
+    eq duplicator(< Vs, Ds, Ss # NM, (VCM ; M |-> 1) >, M, CF, CT) = [(clet x{M . 0} = CF ; CT), < Vs, Ds, Ss # NM, VCM >] .
+    eq duplicator(< Vs, Ds, Ss # NM, (VCM ; M |-> 0) >, M, CF, CT) = [CT, < Vs, Ds, Ss # NM, VCM >] .
+
+    --- HTerm lhs state
+    var lhs : Bool .
+    op compile : HTermList Bool CompState -> CompPair .
+    op compile-err : HTermList Bool CompState -> CompPair [ctor] .
+    eq [comp-int] : compile(I, lhs, CS) = [i(I), CS] .
+    ceq [comp-op] : compile(oper>(T, T'), lhs, CS) = [coper>(CT, CT'), CS'']
+        if [CT, CS'] := compile(T, lhs, CS)
+        /\ [CT', CS''] := compile(T', lhs, CS') .
+    eq [comp-ctor-simp] : compile(ctor(X), lhs, CS) = [cctor(X), CS] .
+    ceq [comp-ctor] : compile(ctor(X, TL), lhs, CS) = [cctor(X, CL), CS']
+        if [CL, CS'] := compile(TL, lhs, CS) .
+    eq [comp-var] : compile(var(X), lhs, < Vs, Ds, Ss # (NM, X |-> x{N}) , VCM >) = if lhs then 
+            [x{N}, < Vs, Ds, Ss # (NM, X |-> x{N}), VCM >]
+        else
+            [x{N . VCM[N]}, (< Vs, Ds, Ss # (NM, X |-> x{N}), (insert(N, VCM[N] + 1, VCM)) >)]
+        fi .
+    eq [comp-err] : compile(var(X), lhs, < Vs, Ds, Ss # NM , VCM >) = compile-err(var(X), lhs, < Vs, Ds, Ss # NM , VCM >) [owise] .
+    ceq [comp-let] : compile((let X = V ; T), lhs, CS) = [CT', (< Vs''', Ds''', Ss''' # if $hasMapping(NM', X) then insert(X, NM'[X], NM''') else NM' fi, VCM''' >)]
+        if [N, (< Vs', Ds', Ss' # NM', VCM' >)] := new-var(CS)
+        /\ [CF, (< Vs'', Ds'', Ss'' # NM'', VCM'' >)] := compile(V, lhs, (< Vs', Ds', Ss' # NM', VCM' >))
+        /\ [CT, CS'] := compile(T, lhs, (< Vs'', Ds'', Ss'' # insert(X, x{N}, NM''), VCM'' >))
+        /\ [CT', (< Vs''', Ds''', Ss''' # NM''', VCM''' >)] := duplicator(CS', N, CF, CT) .
+    ceq [comp-lam] : compile((@ X . T), lhs, CS) = [(@ x{N} . CT'), CS']
+        if [N, (< Vs', Ds', Ss' # NM', VCM' >)] := new-var(CS)
+        /\ [CT, CS'] := compile(T, lhs, (< Vs', Ds', Ss' # insert(X, x{N}, NM'), VCM' >))
+        /\ [CT', CS''] := duplicator(CS', N, x{N}, CT) .
+    ceq [comp-app] : compile(app(F, TL), lhs, CS) = [capp(CF, CL), CS'']
+        if [CF, CS'] := compile(F, lhs, CS)
+        /\ [CL, CS''] := compile(TL, lhs, CS') .
+    eq [comp-list] : compile(nil, lhs, CS) = [nil, CS] .
+    ceq [comp-list] : compile(T TL, lhs, CS) = [CT CL, CS'']
+        if [CT, CS'] := compile(T, lhs, CS)
+        /\ [CL, CS''] := compile(TL, lhs, CS') [owise] .
+
+    protecting PAIR{Nat, NameMap} * (sort Pair{Nat, NameMap} to NMPair) .
+    op gen-nm2 : HTermList Nat -> NMPair .
+    eq gen-nm2(nil, M) = [M, empty] [owise] .
+    ceq gen-nm2(var(X) TL, M) = [M', insert(X, x{M}, NM)]
+        if [M', NM] := gen-nm2(TL, M + 1) .
+
+    op gen-nm1 : HTermList Nat -> NMPair .
+    eq gen-nm1(nil, M) = [M, empty] .
+    eq gen-nm1(I, M) = [M, empty] .
+    eq gen-nm1(var(X), M) = [M + 1, X |-> x{M}] .
+    eq gen-nm1(ctor(X), M) = [M, empty] .
+    eq gen-nm1(ctor(X, TL), M) = gen-nm2(TL, M) .
+    ceq gen-nm1(T TL, M) = [M'', (NM, NM')]
+        if [M', NM] := gen-nm1(T, M)
+        /\ [M'', NM'] := gen-nm1(TL, M') .
+    op gen-nm : Rule -> NameMap .
+    eq gen-nm(ctor(X) = V) = empty .
+    ceq gen-nm(ctor(X, TL) = V) = NM
+        if [M, NM] := gen-nm1(TL, 1) .
+
+    op dup-rhs : CompState NameMap CTerm -> CompPair .
+    eq dup-rhs(CS, empty, CT) = [CT, CS] .
+    ceq dup-rhs(CS, (X |-> x{M}, NM), CT) = dup-rhs(CS', NM, CT')
+        if [CT', CS'] := duplicator(CS, M, x{M}, CT) .
+
+    protecting PAIR{CRules, CompState} * (sort Pair{CRules, CompState} to RuleCompPair) .
+    op compile-rules : Rules CompState -> RuleCompPair .
+    ceq compile-rules((T = V) ; Rs, < Vs, Ds, Ss # NM, VCM >) = [(CT ~ CF') ;; CRs, CS''']
+        if [CF, < Vs', Ds', Ss' # NM', VCM' >] := compile(V, false, < Vs, Ds, Ss # gen-nm(T = V), empty >)
+        /\ [CF', CS''] := dup-rhs(< Vs', Ds', Ss' # NM', VCM' >, NM', CF)
+        /\ [CT, CS'''] := compile(T, true, CS'')
+        /\ [CRs, CS''''] := compile-rules(Rs, CS''') .
+    eq compile-rules(mt, CS) = [mt, CS] .
+endfm
+
+mod hvm-sem is
+    protecting BOOL .
+    protecting hvm-compile .
+
+    vars CF CF0 CF1 CF2 CF3 CT CT0 CT1 CT2 CT3 : CTerm .
+    vars CL CL0 CL1 CL2 CL3 : CTermList .
+    vars CRs CRs' : CRules .
+    vars Rs : Rules .
+    vars ST ST0 ST1 ST2 ST3 : Store .
+    vars I J : MachineInt .
+    vars X Y Z : Qid .
+    vars M N R S Vs Vs' Ds Ds' Ss Ss' : Nat .
+    vars NM NM' NM'' NM''' NM'''' : NameMap .
+    vars VCM VCM' VCM'' VCM''' VCM'''' : VarCountMap .
+    vars CS CS' CS'' CS''' CS'''' : CompState .
+    vars CV CV0 CV1 CV2 CV3 : CompVar .
+    vars Ev : Eval .
+
+    op gen-subs : CTerm CTerm -> Store .
+    eq gen-subs(cctor(X, CL0), cctor(X, CL1)) = gen-subs(CL0, CL1) .
+    eq gen-subs(x{M}, CT) = x{M} |-> CT .
+    eq gen-subs(CT, CT) = empty .
+    eq gen-subs(CT0 nil, CT1 nil) = gen-subs(CT0, CT1) .
+    eq gen-subs(CT0 CL0, CT1 CL1) = gen-subs(CT0, CT1), gen-subs(CL0, CL1) .
+    eq gen-subs(nil, nil) = empty .
+
+    op no-vars : CTermList -> Bool .
+    eq no-vars(CV CL) = false .
+    eq no-vars(CT CL) = no-vars(CL) [owise] .
+    eq no-vars(nil) = true .
+
+    op term-match : CTermList CTermList -> Bool .
+    eq term-match(cctor(X, CL0), cctor(Y, CL1)) = X == Y and term-match(CL0, CL1) .
+    eq term-match(cctor(X), cctor(Y)) = X == Y .
+    eq term-match(cctor(X, CL0), cctor(Y)) = false .
+    eq term-match(cctor(X), cctor(Y, CL1)) = false .
+    eq term-match(x{M}, CT) = no-vars(CT) .
+    eq term-match(CT0, CT1) = CT0 == CT1 and no-vars(CT1) .
+    eq term-match(CT0 nil, CT1 nil) = term-match(CT0, CT1) .
+    eq term-match(CT0 CL0, CT1 CL1) = term-match(CT0, CT1) and term-match(CL0, CL1) .
+    eq term-match(nil, nil) = true .
+
+    op can-sub : CRules CTermList -> Bool .
+    eq can-sub(CRs, nil) = false .
+    eq can-sub(mt, CL) = false .
+    eq can-sub(CRs ;; (cctor(X, CL0) ~ CT0), cctor(Y, CL1)) =
+        if X == Y and size(CL0) == size(CL1) then true else can-sub(CRs, cctor(Y, CL1)) fi .
+    eq can-sub(CRs ;; (cctor(X) ~ CT0), cctor(Y, CL1)) = can-sub(CRs, cctor(Y, CL1)) .
+    eq can-sub(CRs ;; (cctor(X, CL0) ~ CT0), cctor(Y)) = can-sub(CRs, cctor(Y)) .
+    eq can-sub(CRs ;; (cctor(X) ~ CT0), cctor(Y)) = if X == Y then true else can-sub(CRs, cctor(Y)) fi .
+    eq can-sub(CRs, CT) = true .
+    eq can-sub(CRs, CT CL) = if can-sub(CRs, CT) then true else can-sub(CRs, CL) fi .
+
+    protecting PAIR{Store, CTermList} * (sort Pair{Store, CTermList} to EvalPair) .
+    *** op eval-err : CTermList -> EvalPair .
+    op eval-terms : Store CTermList -> EvalPair .
+    *** eq eval-terms(empty, CL) = eval-err(CL) .
+    eq eval-terms((ST, CV |-> CT), CV) = [ST, CT] .
+    eq eval-terms(ST, nil) = [ST, nil] .
+    eq eval-terms(ST, cctor(X)) = [ST, cctor(X)] .
+    ceq eval-terms(ST, cctor(X, CL)) = [ST1, cctor(X, CL0)]
+        if [ST1, CL0] := eval-terms(ST, CL) .
+    ceq eval-terms(ST0, coper>(CT0, CT1)) = [ST2, coper>(CF0, CF1)]
+        if [ST1, CF0] := eval-terms(ST0, CT0)
+        /\ [ST2, CF1] := eval-terms(ST1, CT1) .
+    ceq eval-terms(ST0, CT0 CL0) = [ST2, CT1 CL1]
+        if [ST1, CT1] := eval-terms(ST0, CT0)
+        /\ [ST2, CL1] := eval-terms(ST1, CL0) .
+
+    *** cctor(X, CL), vars, dups, body, dup0, dup1-> body dup0 dup1
+    op dup-ctr : Qid CTermList Nat Nat CTerm CTermList CTermList -> CTermList .
+    eq dup-ctr(X, nil, Vs, Ds, CT0, CL0, CL1) = x{Vs . Ds} CT0 cctor(X, CL0) cctor(X, CL1) . *** HACK
+    eq dup-ctr(X, CL CT, Vs, Ds, CT0, CL0, CL1) =
+        dup-ctr(X, CL, Vs + 2, Ds + 1, dup(Ds # x{Vs . 0}, x{Vs + 1 . 0} = CT | CT0), x{Vs . 0} CL0, x{Vs + 1 . 0} CL1) .
+
+    op eval : Rules -> Eval .
+    ceq eval(Rs) = < Vs, Ds, Ss # CRs, empty |> cctor('Main) >
+        if [CRs, < Vs, Ds, Ss # NM, VCM >] := compile-rules(Rs, < 1, 1, 1 # empty, empty >) .
+
+    rl [app-lam] : < Vs, Ds, Ss # CRs, ST |> capp((@ CV . CT), CF) > => < Vs, Ds, Ss # CRs, insert(CV, CT, ST) |> CF > .
+    rl [app-sup] : < Vs, Ds, Ss # CRs, ST |> capp(sup(R # CT0, CT1), CF) > =>
+        < Vs + 2, Ds, Ss # CRs, ST |> dup(R # x{Vs}, x{Vs + 1} = CF | sup(R # capp(CT0, x{Vs}), capp(CT1, x{Vs + 1}))) > .
+    rl [app-dup] : < Vs, Ds, Ss # CRs, ST |> capp(dup(R # CV0, CV1 = CF | CT), CT0) > =>
+        < Vs, Ds, Ss # CRs, ST |> dup(R # CV0, CV1 = CF | capp(CT, CT0)) > .
+    *** x0, x1, b0, b1
+    rl [dup-lam] : < Vs, Ds, Ss # CRs, ST |> dup(R # CV0, CV1 = (@ CV2 . CT0) | CT1) > =>
+        < Vs + 4, Ds, Ss # CRs, insert(CV0, (@ x{Vs} . x{Vs + 2}),
+                    insert(CV1, (@ x{Vs + 1} . x{Vs + 3}),
+                    insert(CV2, sup(R # x{Vs}, x{Vs + 1}), ST))) |>
+                    dup(R # x{Vs + 2}, x{Vs + 3} = CT0 | CT1) > .
+    rl [dup-sup] : < Vs, Ds, Ss # CRs, ST |> dup(R # CV0, CV1 = sup(S # CF0, CF1) | CT) > =>
+        if S == R then
+            < Vs, Ds, Ss # CRs, insert(CV0, CF0, insert(CV1, CF1, ST)) |> CT >
+        else
+            *** a0, a1, b0, b1
+            < Vs + 4, Ds, Ss # CRs,
+            insert(CV0, sup(S # x{Vs}, x{Vs + 1}), insert(CV1, sup(S # x{Vs + 2}, x{Vs + 3}), ST)) |>
+                    dup(R # x{Vs}, x{Vs + 1} = CF0 | dup(R # x{Vs + 2}, x{Vs + 3} = CF1 | CT)) >
+        fi .
+    rl [dup-dup] : < Vs, Ds, Ss # CRs, ST |> dup(R # CV0, CV1 = dup(S # CV2, CV3 = CF | CT0) | CT1) > =>
+        < Vs, Ds, Ss # CRs, ST |> dup(S # CV2, CV3 = CF | dup(R # CV0, CV1 = CT0 | CT1)) > .
+    rl [dup-num] : < Vs, Ds, Ss # CRs, ST |> dup(R # CV0, CV1 = i(I) | CT) > => < Vs, Ds, Ss # CRs, insert(CV0, i(I), insert(CV1, i(I), ST)) |> CT > .
+    rl [dup-ctr] : < Vs, Ds, Ss # CRs, ST |> dup(R # CV0, CV1 = cctor(X) | CT) > =>
+        < Vs, Ds, Ss # CRs, insert(CV0, cctor(X), insert(CV1, cctor(X), ST)) |> CT > .
+    crl [dup-ctr] : < Vs, Ds, Ss # CRs, ST |> dup(R # CV0, CV1 = cctor(X, CL) | CT) > =>
+        < Vs', Ds', Ss # CRs, insert(CV0, CF0, insert(CV1, CF1, ST)) |> CF >
+        if x{Vs' . Ds'} CF CF0 CF1 := dup-ctr(X, CL, Vs, Ds, CT, nil, nil) .
+
+    rl [oper>] : < Vs, Ds, Ss # CRs, ST |> coper>(i(I), i(J)) > => < Vs, Ds, Ss # CRs, ST |> i(if I > J then 1 else 0 fi) > .
+    *** rl [op-sup0] : < Vs, Ds, Ss # CRs, ST |> > => < Vs, Ds, Ss # CRs, ST |> > .
+    *** rl [op-sup1] : < Vs, Ds, Ss # CRs, ST |> > => < Vs, Ds, Ss # CRs, ST |> > .
+    *** rl [op-dup0] : < Vs, Ds, Ss # CRs, ST |> > => < Vs, Ds, Ss # CRs, ST |> > .
+    *** rl [op-dup1] : < Vs, Ds, Ss # CRs, ST |> > => < Vs, Ds, Ss # CRs, ST |> > .
+
+    crl [eval-rule] : < Vs, Ds, Ss # (cctor(X, CL0) ~ CT) ;; CRs, ST |> cctor(Y, CL1) > =>
+        < Vs, Ds, Ss # (cctor(X, CL0) ~ CT) ;; CRs, (ST , gen-subs(CL0, CL1)) |> CT >
+        if no-vars(CL1) = true
+        /\ X == Y and term-match(CL0, CL1) .
+    rl [eval-rule] : < Vs, Ds, Ss # (cctor(X) ~ CT) ;; CRs, ST |> cctor(X) > =>
+        < Vs, Ds, Ss # (cctor(X) ~ CT) ;; CRs, ST |> CT > .
+    rl [eval-var] : < Vs, Ds, Ss # CRs, (ST, CV |-> CT) |> CV > => < Vs, Ds, Ss # CRs, ST |> CT > .
+    rl [let-var] : < Vs, Ds, Ss # CRs, (ST, CV1 |-> CF) |> (clet CV0 = CV1 ; CT) > =>
+        < Vs, Ds, Ss # CRs, ST |> (clet CV0 = CF ; CT) > .
+    rl [dup-var] : < Vs, Ds, Ss # CRs, (ST, CV |-> CF) |> dup(R # CV0, CV1 = CV | CT) > =>
+        < Vs, Ds, Ss # CRs, ST |> dup(R # CV0, CV1 = CF | CT) > .
+    crl [eval-ctr] : < Vs, Ds, Ss # CRs, ST0 |> cctor(X, CL0) > =>
+        < Vs, Ds, Ss # CRs, ST1 |> cctor(X, CL1) >
+        if no-vars(CL0) = false
+        /\ [ST1, CL1] := eval-terms(ST0, CL0) .
+    crl [eval-ctr-inner] : < Vs, Ds, Ss # CRs, ST |> cctor(X, CL0 CT CL1) > =>
+        < Vs', Ds', Ss' # CRs', ST1 |> cctor(X, CL0 CF CL1) >
+        if < Vs, Ds, Ss # CRs, ST |> CT > => < Vs', Ds', Ss' # CRs', ST1 |> CF >
+        /\ CT =/= CF .
+    rl [eval-let] : < Vs, Ds, Ss # CRs, ST |> (clet CV = CF ; CT) > =>
+        < Vs, Ds, Ss # CRs, insert(CV, CF, ST) |> CT > .
+    *** crl [unwrap-const] : < Vs, Ds, Ss # CRs, ST |> CT > => CT
+    ***     if not can-sub(CRs, CT) .
+
+    *** crl [eval-op-add] : < CRs, Ds, ST, oper+(T, T') > => < CRs, Ds, ST, I + J > 
+    ***     if < CRs, Ds, ST, T > => I /\ < CRs, Ds, ST, T' > => J .
+    *** crl [eval-op-sub] : < CRs, Ds, ST, oper-(T, T') > => < CRs, Ds, ST, I - J > 
+    ***     if < CRs, Ds, ST, T > => I /\ < CRs, Ds, ST, T' > => J .
+    *** crl [eval-op-mul] : < CRs, Ds, ST, oper*(T, T') > => < CRs, Ds, ST, I * J > 
+    ***     if < CRs, Ds, ST, T > => I /\ < CRs, Ds, ST, T' > => J .
+    *** crl [eval-op-div] : < CRs, Ds, ST, oper/(T, T') > => < CRs, Ds, ST, I / J > 
+    ***     if < CRs, Ds, ST, T > => I /\ < CRs, Ds, ST, T' > => J .
+endm
